@@ -1,0 +1,51 @@
+# ==========================================
+# IDEs y Editores de Texto
+# ==========================================
+
+# --- Visual Studio Code ---
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# --- PyCharm / IntelliJ / JetBrains ---
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# ==========================================
+# Lenguajes de Programación (Salidas y Build)
+# ==========================================
+
+# --- Java ---
+*.class
+*.war
+*.ear
+*.jar
+
+# Directorios de construcción (Maven, Gradle, etc.)
+bin/
+build/
+target/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales (Recomendado)
+venv/
+.venv/
+env/
+
+# Distribución y Paquetes
+dist/
+*.egg-info/
+
+# ==========================================
+# Archivos de Sistema y Logs
+# ==========================================
+*.log
+.DS_Store
+Thumbs.db
