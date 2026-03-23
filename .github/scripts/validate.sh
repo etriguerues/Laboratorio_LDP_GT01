@@ -1,87 +1,55 @@
 #!/bin/bash
 export LANG=C.UTF-8
 
-# Colores para la salida en consola
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
-NC='\033[0;0m' # Sin color
+NC='\033[0;0m' 
 
 echo "--------------------------------------------------------"
-echo "Iniciando validación: Algoritmo Calculadora IMC (PSeInt)"
+echo "Validación Lab 1: Inventario Farmacia (Python)"
 echo "--------------------------------------------------------"
 
-# Variable de control de errores
 FAILED=0
+FILE_PY=$(find . -name "*.py" | head -n 1)
 
-# Buscar el archivo .psc (asumimos que hay uno en la carpeta raíz o subcarpetas)
-FILE_PSC=$(find . -name "*.psc" | head -n 1)
-
-if [ -z "$FILE_PSC" ]; then
-    echo -e "${RED}[ERROR] No se encontró ningún archivo .psc (PSeInt).${NC}"
+if [ -z "$FILE_PY" ]; then
+    echo -e "${RED}[ERROR] No se encontró ningún archivo .py.${NC}"
     exit 1
 fi
+echo -e "Archivo detectado: ${YELLOW}$FILE_PY${NC}\n"
 
-echo -e "Archivo detectado: ${YELLOW}$FILE_PSC${NC}"
+# --- PASO 1: CLEAN CODE Y VARIABLES ---
+echo -e "${YELLOW}PASO 1: Verificando Constantes y Variables...${NC}"
+if grep -qE "STOCK_MINIMO_ALERTA\s*=\s*5" "$FILE_PY"; then echo -e "${GREEN}[OK] Constante STOCK_MINIMO_ALERTA correcta.${NC}"; else echo -e "${RED}[ERROR] Falta STOCK_MINIMO_ALERTA = 5.${NC}"; FAILED=1; fi
 
-# --- PASO 1: VERIFICAR FUNCIÓN OBLIGATORIA ---
-echo -e "\n${YELLOW}PASO 1: Verificando Función CalcularIMC...${NC}"
+# --- PASO 2: FUNCIONES Y CASTING ---
+echo -e "\n${YELLOW}PASO 2: Verificando Funciones y Casting Fuerte...${NC}"
+if grep -qE "def\s+actualizar_stock" "$FILE_PY"; then echo -e "${GREEN}[OK] Función actualizar_stock encontrada.${NC}"; else echo -e "${RED}[ERROR] Falta la función actualizar_stock.${NC}"; FAILED=1; fi
+if grep -qE "int\s*\(" "$FILE_PY"; then echo -e "${GREEN}[OK] Casting a entero detectado.${NC}"; else echo -e "${RED}[ERROR] No se usó int() para convertir el texto.${NC}"; FAILED=1; fi
 
-# Validar definición de la función y nombre exacto
-if grep -qi "Funcion.*CalcularIMC" "$FILE_PSC"; then
-    echo -e "${GREEN}[OK] Función 'CalcularIMC' definida.${GREEN}"
+# --- PASO 3: MUTABILIDAD ---
+echo -e "\n${YELLOW}PASO 3: Verificando Copia Segura (Mutabilidad)...${NC}"
+if grep -qE "respaldo_inventario\s*=\s*inventario_base\.copy\(\)" "$FILE_PY"; then
+    echo -e "${GREEN}[OK] Uso correcto de .copy() para la lista.${NC}"
 else
-    echo -e "${RED}[ERROR] No se encontró la función 'CalcularIMC'.${NC}"
+    echo -e "${RED}[ERROR] respaldo_inventario no usó .copy() de inventario_base.${NC}"
     FAILED=1
 fi
 
-# Validar fórmula matemática peso / (altura * altura)
-if grep -qE "peso\s*/\s*\(\s*altura\s*\*\s*altura\s*\)" "$FILE_PSC"; then
-    echo -e "${GREEN}[OK] Fórmula de IMC correcta.${NC}"
+# --- PASO 4: GARBAGE COLLECTOR ---
+echo -e "\n${YELLOW}PASO 4: Verificando Garbage Collector...${NC}"
+if grep -qE "respaldo_inventario\s*=\s*None" "$FILE_PY"; then echo -e "${GREEN}[OK] Memoria liberada correctamente.${NC}"; else echo -e "${RED}[ERROR] Falta asignar None al respaldo_inventario.${NC}"; FAILED=1; fi
+
+# --- PASO 5: COMPILACIÓN Y SINTAXIS ---
+echo -e "\n${YELLOW}PASO 5: Verificando sintaxis de Python...${NC}"
+if python3 -m py_compile "$FILE_PY" 2>/dev/null; then
+    echo -e "${GREEN}[OK] Compilación exitosa. Sin errores de sintaxis.${NC}"
 else
-    echo -e "${RED}[ERROR] No se encontró la fórmula correcta: peso / (altura * altura).${NC}"
-    FAILED=1
-fi
-
-# --- PASO 2: VERIFICAR VARIABLES Y TIPOS ---
-echo -e "\n${YELLOW}PASO 2: Verificando Definición de Variables...${NC}"
-
-# Validar que peso, altura e imc estén definidos como Real
-if grep -qiE "Definir.*peso.*altura.*imc.*Como.*Real" "$FILE_PSC"; then
-    echo -e "${GREEN}[OK] Variables (peso, altura, imc) definidas como Real.${NC}"
-else
-    echo -e "${RED}[ERROR] Las variables peso, altura e imc deben definirse como Real.${NC}"
-    FAILED=1
-fi
-
-# --- PASO 3: VERIFICAR ESTRUCTURAS DE CONTROL ---
-echo -e "\n${YELLOW}PASO 3: Verificando Estructuras de Control (Mientras y Si-Entonces)...${NC}"
-
-# Validar uso de Mientras para validación (buscamos al menos dos ciclos)
-MIENTRAS_COUNT=$(grep -ci "Mientras" "$FILE_PSC")
-if [ "$MIENTRAS_COUNT" -ge 2 ]; then
-    echo -e "${GREEN}[OK] Se detectaron ciclos 'Mientras' para validación.${NC}"
-else
-    echo -e "${RED}[ERROR] Se requieren al menos 2 ciclos 'Mientras' (uno para peso y otro para altura).${NC}"
-    FAILED=1
-fi
-
-# Validar estructura Si-Entonces con operador lógico Y
-if grep -qiE "Si.*imc.*>=.*18.5.*Y.*imc.*<=.*24.9.*Entonces" "$FILE_PSC"; then
-    echo -e "${GREEN}[OK] Estructura Si-Entonces con validación de rango (Y) correcta.${NC}"
-else
-    echo -e "${RED}[ERROR] No se encontró la estructura lógica: Si imc >= 18.5 Y imc <= 24.9 Entonces.${NC}"
+    echo -e "${RED}[ERROR] El código tiene errores de sintaxis (indentación, faltan ':', etc.).${NC}"
+    python3 -m py_compile "$FILE_PY" # Para mostrar el error exacto en consola
     FAILED=1
 fi
 
 # --- RESULTADO FINAL ---
-echo -e "\n--------------------------------------------------------"
-if [ $FAILED -eq 0 ]; then
-    echo -e "${GREEN}✔ ALGORITMO APROBADO${NC}"
-    echo "El código cumple con la función, validaciones y lógica solicitada."
-    exit 0
-else
-    echo -e "${RED}✘ EL ALGORITMO NO CUMPLE LOS REQUISITOS${NC}"
-    echo "Revisa los errores marcados en rojo arriba."
-    exit 1
-fi
+if [ $FAILED -eq 0 ]; then echo -e "\n${GREEN}✔ LABORATORIO 1 APROBADO${NC}"; exit 0; else echo -e "\n${RED}✘ EL ALGORITMO NO CUMPLE LOS REQUISITOS O TIENE ERRORES DE SINTAXIS${NC}"; exit 1; fi
