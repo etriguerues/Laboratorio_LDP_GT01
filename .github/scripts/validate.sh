@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 NC='\033[0;0m' 
 
 echo "--------------------------------------------------------"
-echo "Validación Lab 1: Procesador de Pedidos (Python)"
+echo "Validación Lab: Procesador de Pedidos (Python)"
 echo "--------------------------------------------------------"
 
 FAILED=0
