@@ -1,5 +1,6 @@
 #!/bin/bash
 export LANG=C.UTF-8
+python3 -m pip install pytest --user -q
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0;0m' 
