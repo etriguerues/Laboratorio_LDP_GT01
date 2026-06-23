@@ -18,6 +18,27 @@ echo "Iniciando Evaluación Dinámica y Estructural (AST)"
 echo -e "==========================================================\n"
 
 # ---------------------------------------------------------
+# FASE 0: Verificación de Existencia de Archivos
+# ---------------------------------------------------------
+ARCHIVOS_REQUERIDOS=("carrito_pro.py" "test_carrito_pro.py")
+FALTAN_ARCHIVOS=0
+
+for archivo in "${ARCHIVOS_REQUERIDOS[@]}"; do
+    if [ ! -f "$archivo" ]; then
+        echo -e "${RED}✘ [FASE 0 - ERROR]: No se encontró el archivo obligatorio: '$archivo'.${NC}"
+        FALTAN_ARCHIVOS=1
+    fi
+done
+
+if [ $FALTAN_ARCHIVOS -ne 0 ]; then
+    echo -e "\n${RED}ESTADO DE EVALUACIÓN: RECHAZADA (0/100). Faltan archivos críticos para iniciar la evaluación.${NC}"
+    echo -e "=========================================================="
+    exit 1
+else
+    echo -e "${GREEN}✔ [FASE 0 - ARCHIVOS]: Archivos base y de pruebas localizados correctamente.${NC}"
+fi
+
+# ---------------------------------------------------------
 # FASE 1: Análisis Estático Básico
 # ---------------------------------------------------------
 if python3 -m py_compile "carrito_pro.py" 2>/dev/null; then
@@ -119,13 +140,8 @@ fi
 cat << 'EOF' > ast_test_validator.py
 import ast
 import sys
-import os
 
 test_file = "test_carrito_pro.py"
-
-if not os.path.exists(test_file):
-    print(f"✘ [AST TESTS ERROR] Archivo de pruebas '{test_file}' no encontrado.")
-    sys.exit(1)
 
 try:
     with open(test_file, 'r', encoding='utf-8') as f:
@@ -182,18 +198,13 @@ fi
 # ---------------------------------------------------------
 # FASE 4: Pruebas Unitarias de Lógica de Negocio
 # ---------------------------------------------------------
-if [ -f "test_carrito_pro.py" ]; then
-    echo "----------------------------------------------------------"
-    echo "Lanzando aserciones lógicas mediante Pytest..."
-    
-    if pytest test_carrito_pro.py -q -s; then
-        echo -e "${GREEN}✔ [FASE 4 - COMPORTAMIENTO]: Lógica de negocio y Big O validados.${NC}"
-    else
-        echo -e "${RED}✘ [FASE 4 - FALLO LÓGICO]: Falló uno o más casos de prueba de Pytest.${NC}"
-        FAILED=1
-    fi
+echo "----------------------------------------------------------"
+echo "Lanzando aserciones lógicas mediante Pytest..."
+
+if pytest test_carrito_pro.py -q -s; then
+    echo -e "${GREEN}✔ [FASE 4 - COMPORTAMIENTO]: Lógica de negocio y Big O validados.${NC}"
 else
-    echo -e "${RED}✘ [FASE 4 - ERROR]: Archivo 'test_carrito_pro.py' ausente.${NC}"
+    echo -e "${RED}✘ [FASE 4 - FALLO LÓGICO]: Falló uno o más casos de prueba de Pytest.${NC}"
     FAILED=1
 fi
 
