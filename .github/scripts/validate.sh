@@ -139,7 +139,7 @@ def validar_estructura(archivo):
         for err in errores: print(f"✘ [INCUMPLIMIENTO TÉCNICO]: {err}")
         sys.exit(1)
 
-    print("✔ [FASE 2 - AST BASE]: Reglas específicas de If, Elif, For, While, Try/Except, [] y mutaciones validadas.")
+    print("\033[0;32m✔ [FASE 2 - AST BASE]: Reglas específicas de If, Elif, For, While, Try/Except, [] y mutaciones validadas.\033[0;0m")
     sys.exit(0)
 
 if __name__ == '__main__':
@@ -201,7 +201,7 @@ if errores:
     for err in errores: print(f"✘ [TRAMPA DETECTADA EN TESTS]: {err}")
     sys.exit(1)
 
-print("✔ [FASE 3 - AST TESTS]: Importación de dependencias (pytest) y funciones validada exitosamente.")
+print("\033[0;32m✔ [FASE 3 - AST TESTS]: Importación de dependencias (pytest) y funciones validada exitosamente.\033[0;0m")
 sys.exit(0)
 EOF
 
