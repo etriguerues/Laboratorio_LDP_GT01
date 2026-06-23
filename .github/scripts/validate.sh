@@ -51,7 +51,6 @@ fi
 # ---------------------------------------------------------
 # FASE 2: Análisis Estructural Estricto (AST Base)
 # ---------------------------------------------------------
-# Generamos un script de Python al vuelo para analizar el código del alumno
 cat << 'EOF' > ast_validator.py
 import ast
 import sys
@@ -64,7 +63,6 @@ def validar_estructura(archivo):
         print(f"✘ [AST ERROR] No se pudo parsear el archivo: {e}")
         sys.exit(1)
 
-    # 1. Extraer todas las funciones definidas en el archivo
     funciones = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
     
     requeridas = [
@@ -78,7 +76,7 @@ def validar_estructura(archivo):
 
     errores = []
 
-    # 2. Validar Nombres de Funciones
+    # Validar Nombres de Funciones
     for req in requeridas:
         if req not in funciones:
             errores.append(f"Falta la función requerida o nombre incorrecto: '{req}'")
@@ -87,47 +85,69 @@ def validar_estructura(archivo):
         for err in errores: print(f"✘ [ESTRUCTURA]: {err}")
         sys.exit(1)
 
-    # 3. Validaciones de Elementos Gramaticales por Módulo
-    
-    # buscar_precio_binario: Debe usar While, If, Assign (Variables) y Return
-    f_binaria = funciones["buscar_precio_binario"]
-    if not any(isinstance(n, ast.While) for n in ast.walk(f_binaria)):
-        errores.append("buscar_precio_binario debe usar un ciclo 'while'.")
-    if not any(isinstance(n, ast.If) for n in ast.walk(f_binaria)):
-        errores.append("buscar_precio_binario debe usar condicionales ('if'/'elif'/'else').")
+    # ----------------------------------------------------------------
+    # Validaciones Específicas por Función (Basado en la Rúbrica)
+    # ----------------------------------------------------------------
 
-    # escanear_estanteria_bodega: Debe usar For
+    # 1. importar_y_validar_orden: Validar Try/Except
+    f_importar = funciones["importar_y_validar_orden"]
+    if not any(isinstance(n, ast.Try) for n in ast.walk(f_importar)):
+        errores.append("importar_y_validar_orden debe usar un bloque 'try' y 'except'.")
+
+    # 2. gestionar_historial_carrito: Validar if, elif, append y pop
+    f_historial = funciones["gestionar_historial_carrito"]
+    if not any(isinstance(n, ast.If) for n in ast.walk(f_historial)):
+        errores.append("gestionar_historial_carrito debe usar 'if'.")
+    # En el AST, un elif o else se detecta validando que el nodo If tenga un bloque orelse
+    if not any(isinstance(n, ast.If) and n.orelse for n in ast.walk(f_historial)):
+        errores.append("gestionar_historial_carrito debe usar 'elif' o 'else'.")
+    
+    llamadas_metodos = [n.func.attr for n in ast.walk(f_historial) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)]
+    if 'append' not in llamadas_metodos:
+        errores.append("gestionar_historial_carrito debe usar la función 'append'.")
+    if 'pop' not in llamadas_metodos:
+        errores.append("gestionar_historial_carrito debe usar la función 'pop'.")
+
+    # 3. escanear_estanteria_bodega: Validar For
     f_bodega = funciones["escanear_estanteria_bodega"]
     if not any(isinstance(n, ast.For) for n in ast.walk(f_bodega)):
         errores.append("escanear_estanteria_bodega debe usar ciclos 'for'.")
 
-    # ordenar_productos_quicksort: Debe usar listas
+    # 4. calcular_descuento_cascada: Validar If
+    f_descuento = funciones["calcular_descuento_cascada"]
+    if not any(isinstance(n, ast.If) for n in ast.walk(f_descuento)):
+        errores.append("calcular_descuento_cascada debe usar la estructura condicional 'if'.")
+
+    # 5. ordenar_productos_quicksort: Validar uso de corchetes para Listas
     f_quick = funciones["ordenar_productos_quicksort"]
     if not any(isinstance(n, (ast.List, ast.ListComp)) for n in ast.walk(f_quick)):
-        errores.append("ordenar_productos_quicksort debe utilizar Listas o Listas por comprensión (DRY).")
+        errores.append("ordenar_productos_quicksort debe utilizar corchetes para listas [ ].")
 
-    # Validaciones Globales Críticas (Variables y Returns)
+    # 6. buscar_precio_binario: Validar While
+    f_binaria = funciones["buscar_precio_binario"]
+    if not any(isinstance(n, ast.While) for n in ast.walk(f_binaria)):
+        errores.append("buscar_precio_binario debe usar un ciclo 'while'.")
+
+    # Validación Global: Todas deben retornar algo
     for nombre_func, nodo_func in funciones.items():
         if nombre_func in requeridas:
-            if not any(isinstance(n, ast.Assign) for n in ast.walk(nodo_func)):
-                errores.append(f"La función '{nombre_func}' no declara ninguna variable.")
             if not any(isinstance(n, ast.Return) for n in ast.walk(nodo_func)):
                 errores.append(f"La función '{nombre_func}' no contiene la instrucción 'return'.")
 
+    # Emisión de Errores Final
     if errores:
         for err in errores: print(f"✘ [INCUMPLIMIENTO TÉCNICO]: {err}")
         sys.exit(1)
 
-    print("✔ [FASE 2 - AST BASE]: Nombres, ciclos, condicionales, listas y retornos validados.")
+    print("✔ [FASE 2 - AST BASE]: Reglas específicas de If, Elif, For, While, Try/Except, [] y mutaciones validadas.")
     sys.exit(0)
 
 if __name__ == '__main__':
     validar_estructura("carrito_pro.py")
 EOF
 
-# Ejecutar el validador AST Base
 if python3 ast_validator.py; then
-    rm ast_validator.py # Limpiamos el archivo temporal
+    rm ast_validator.py
 else
     rm ast_validator.py
     echo -e "${RED}✘ [FASE 2 - CRÍTICA]: El código no usa las estructuras requeridas en las instrucciones.${NC}"
@@ -153,7 +173,6 @@ except Exception as e:
 has_pytest = False
 imported_funcs = set()
 
-# Escanear el AST buscando Imports
 for node in ast.walk(tree):
     if isinstance(node, ast.Import):
         for alias in node.names:
@@ -186,7 +205,6 @@ print("✔ [FASE 3 - AST TESTS]: Importación de dependencias (pytest) y funcion
 sys.exit(0)
 EOF
 
-# Ejecutar el validador AST de Tests
 if python3 ast_test_validator.py; then
     rm ast_test_validator.py
 else
